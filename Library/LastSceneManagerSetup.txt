@@ -1,0 +1,5 @@
+sceneSetups:
+- path: Assets/liquid/Scenes/Scene that is liquid scene.unity
+  isLoaded: 1
+  isActive: 1
+  isSubScene: 0
