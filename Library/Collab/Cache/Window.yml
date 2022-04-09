@@ -90,6 +90,10 @@ MonoBehaviour:
     - Assets/TextMesh Pro/Sprites/EmojiOne.json.meta
     - Assets/TextMesh Pro/Sprites/EmojiOne.png
     - Assets/TextMesh Pro/Sprites/EmojiOne.png.meta
+    - Assets/liquid/Animation/ak105_hands_ull_anim.controller
+    - Assets/liquid/Animation/ak105_hands_ull_anim.controller.meta
+    - Assets/liquid/Animation/hands_standing_anim.anim
+    - Assets/liquid/Animation/hands_standing_anim.anim.meta
     - Assets/liquid/Animation/player_nogun_rest.anim
     - Assets/liquid/Fonts/SwipeRaceDemo.asset
     - Assets/liquid/Fonts/SwipeRaceDemo.asset.meta
@@ -97,6 +101,24 @@ MonoBehaviour:
     - Assets/liquid/Fonts/Xbka.asset.meta
     - Assets/liquid/Fonts/airstrikeplat.asset
     - Assets/liquid/Fonts/airstrikeplat.asset.meta
+    - Assets/liquid/Materials/Bush_mat.mat
+    - Assets/liquid/Materials/Bush_mat.mat.meta
+    - Assets/liquid/Materials/Car_mat.mat
+    - Assets/liquid/Materials/Car_mat.mat.meta
+    - Assets/liquid/Materials/Garbage_mat.mat
+    - Assets/liquid/Materials/Garbage_mat.mat.meta
+    - Assets/liquid/Materials/Leaf_mat.mat
+    - Assets/liquid/Materials/Leaf_mat.mat.meta
+    - Assets/liquid/Materials/Metal_crate_mat.mat
+    - Assets/liquid/Materials/Metal_crate_mat.mat.meta
+    - Assets/liquid/Materials/NoBackFaceShader.shader
+    - Assets/liquid/Materials/NoBackFaceShader.shader.meta
+    - Assets/liquid/Materials/Tree_mat.mat
+    - Assets/liquid/Materials/Tree_mat.mat.meta
+    - Assets/liquid/Materials/Wheel_mat.mat
+    - Assets/liquid/Materials/Wheel_mat.mat.meta
+    - Assets/liquid/Materials/leafs.png
+    - Assets/liquid/Materials/leafs.png.meta
     - Assets/liquid/Models/Cube.png
     - Assets/liquid/Models/Cube.png.meta
     - Assets/liquid/Models/ak 105.blend
@@ -115,6 +137,14 @@ MonoBehaviour:
     - Assets/liquid/Models/ak105_hands_ull_anim.blend.meta
     - Assets/liquid/Models/ak105_hands_ull_anim.blend1
     - Assets/liquid/Models/ak105_hands_ull_anim.blend1.meta
+    - Assets/liquid/Models/big_garbage_crate.blend
+    - Assets/liquid/Models/big_garbage_crate.blend.meta
+    - Assets/liquid/Models/big_garbage_crate.blend1
+    - Assets/liquid/Models/big_garbage_crate.blend1.meta
+    - Assets/liquid/Models/bush.blend
+    - Assets/liquid/Models/bush.blend.meta
+    - Assets/liquid/Models/bush.blend1
+    - Assets/liquid/Models/bush.blend1.meta
     - Assets/liquid/Models/car.blend
     - Assets/liquid/Models/car.blend.meta
     - Assets/liquid/Models/car.blend1
@@ -123,6 +153,10 @@ MonoBehaviour:
     - Assets/liquid/Models/glock.blend.meta
     - Assets/liquid/Models/glock.blend1
     - Assets/liquid/Models/glock.blend1.meta
+    - Assets/liquid/Models/green_wall.blend
+    - Assets/liquid/Models/green_wall.blend.meta
+    - Assets/liquid/Models/green_wall.blend1
+    - Assets/liquid/Models/green_wall.blend1.meta
     - Assets/liquid/Models/habds sumple.blend
     - Assets/liquid/Models/habds sumple.blend.meta
     - Assets/liquid/Models/habds sumple.blend1
@@ -138,6 +172,10 @@ MonoBehaviour:
     - Assets/liquid/Models/just the hands.blend
     - Assets/liquid/Models/just the hands.blend1
     - Assets/liquid/Models/just the hands.blend1.meta
+    - Assets/liquid/Models/small_tree.blend
+    - Assets/liquid/Models/small_tree.blend.meta
+    - Assets/liquid/Models/small_tree.blend1
+    - Assets/liquid/Models/small_tree.blend1.meta
     - Assets/liquid/Scenes/Scene that is liquid scene.unity
     - Assets/liquid/Scripts/CameraRecoil.cs
     - Assets/liquid/Scripts/CameraRecoil.cs.meta
@@ -150,7 +188,7 @@ MonoBehaviour:
     - Packages/manifest.json
     - Packages/packages-lock.json
     - 
-    m_Values: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    m_Values: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   RevisionSummary: 
   ChangesSearchValue: 
   SelectedHistoryRevision: 
