@@ -47,15 +47,17 @@ public class Weapon : MonoBehaviour
     private Rigidbody _rb;
     private LineRenderer _shootingLine;
     private Transform _playerCamera;
-    private TMP_Text _ammoText;
     private Vector3 _startPosition;
     private Quaternion _startRotation;
     [Header("Game Objects")]
     public TMP_Text ammoCount;
     public Camera fpsCam;
     public ParticleSystem muzzleFlash;
+    public GameObject bloodEffect;
     public GameObject impactEffect;
+    public Transform shootingPos;
 
+    int playerLayerMask = 11 << 8;
 
     private float nextTimeToFire = 0f;
     private CameraRecoil recoilScript;
@@ -111,19 +113,26 @@ public class Weapon : MonoBehaviour
     {
         muzzleFlash.Play();
         _ammo--;
+        GameObject bloodGO;
 
         RaycastHit hit;
-        if (Physics.Raycast(fpsCam.transform.position, fpsCam.transform.forward, out hit, range))
+        if (Physics.Raycast(shootingPos.position, fpsCam.transform.forward, out hit, range))
         {
             GameObject impactGO = Instantiate(impactEffect, hit.point, Quaternion.LookRotation(hit.normal));
+            Destroy(impactGO, .25f);
+
+            if (Physics.Raycast(shootingPos.position, shootingPos.forward, out hit, range, playerLayerMask))
+            { 
+                bloodGO = Instantiate(bloodEffect, hit.point, Quaternion.LookRotation(hit.normal));
+                Destroy(bloodGO, .25f);
+            }
+
             _shootingLine.SetPosition(0, hit.point);
             _shootingLine.SetPosition(1, gameObject.transform.position);
-
-            Destroy(impactGO, .25f);
         }
 
         recoilScript.RecoilFire(recoilX, recoilX, recoilZ);
-        //StartCoroutine(ShootingCooldown());
+        StartCoroutine(ShootingCooldown());
     }
 
     private IEnumerator ShootingCooldown()
@@ -132,7 +141,6 @@ public class Weapon : MonoBehaviour
         yield return new WaitForSeconds(1f / shotsPerSecond);
         _shooting = false;
     }
-
     public void Pickup(Transform weaponHolder, Transform playerCamera)
     {
         if (_held) return;
