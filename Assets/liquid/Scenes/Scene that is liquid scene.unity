@@ -5761,7 +5761,7 @@ MonoBehaviour:
   kickbackForce: 1
   resetSmooth: 5
   scopePos: {x: 0.33, y: 0.3, z: -0.51}
-  recoilX: -3
+  recoilX: -5
   recoilY: 3
   recoilZ: 0.4
   bolt: {fileID: 0}
