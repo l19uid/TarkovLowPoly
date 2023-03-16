@@ -53,7 +53,6 @@ public class Weapon : MonoBehaviour
     public TMP_Text ammoCount;
     public Camera fpsCam;
     public ParticleSystem muzzleFlash;
-    public GameObject bloodEffect;
     public GameObject impactEffect;
     public Transform shootingPos;
 
@@ -98,7 +97,7 @@ public class Weapon : MonoBehaviour
             transform.localRotation = Quaternion.Euler(new Vector3(spinDelta * 360f, 0, 0));
         }
 
-        if ((tapable ? Input.GetMouseButtonDown(0) : Input.GetMouseButton(0)) && !_shooting && !_reloading)
+        if ((tapable ? Input.GetMouseButtonDown(0) : Input.GetMouseButton(0)) && !_shooting && !_reloading && _ammo > 0)
         {
             Shoot();
             ammoCount.text = _ammo + " / " + maxAmmo;
@@ -113,22 +112,11 @@ public class Weapon : MonoBehaviour
     {
         muzzleFlash.Play();
         _ammo--;
-        GameObject bloodGO;
-
         RaycastHit hit;
-        if (Physics.Raycast(shootingPos.position, fpsCam.transform.forward, out hit, range))
+
+        if (Physics.Raycast(shootingPos.position, shootingPos.transform.forward, out hit, range))
         {
-            GameObject impactGO = Instantiate(impactEffect, hit.point, Quaternion.LookRotation(hit.normal));
-            Destroy(impactGO, .25f);
-
-            if (Physics.Raycast(shootingPos.position, shootingPos.forward, out hit, range, playerLayerMask))
-            { 
-                bloodGO = Instantiate(bloodEffect, hit.point, Quaternion.LookRotation(hit.normal));
-                Destroy(bloodGO, .25f);
-            }
-
-            _shootingLine.SetPosition(0, hit.point);
-            _shootingLine.SetPosition(1, gameObject.transform.position);
+            Destroy(Instantiate(impactEffect, hit.point, Quaternion.Inverse(shootingPos.rotation)), .2f);
         }
 
         recoilScript.RecoilFire(recoilX, recoilX, recoilZ);

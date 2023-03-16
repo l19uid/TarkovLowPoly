@@ -8,7 +8,7 @@ public class MovePlayer : MonoBehaviour
     [SerializeField] Transform orientation;
 
     [Header("Movement")]
-    [SerializeField] float moveSpeed = 6f;
+    [SerializeField] float moveSpeed = 4f;
     [SerializeField] float airMultiplier = 0.4f;
     float movementMultiplier = 10f;
 
@@ -41,8 +41,8 @@ public class MovePlayer : MonoBehaviour
     [SerializeField] LayerMask groundMask;
     [SerializeField] float groundDistance = 0.2f;
 
-    public bool isGrounded { get; private set; }
-    public bool canStand { get; private set; }
+    public bool isGrounded;
+    public bool canStand;
 
     Vector3 moveDirection;
     Vector3 slopeMoveDirection;
@@ -64,9 +64,8 @@ public class MovePlayer : MonoBehaviour
         isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
         canStand = !Physics.CheckSphere(headCheck.position, groundDistance, groundMask);
 
-        MyInput();
-        ControlDrag();
-        ControlSpeed();
+        ManageInput();
+        ManageRigidBody();
 
         if (Input.GetKeyDown(jumpKey) && isGrounded)
         {
@@ -87,7 +86,7 @@ public class MovePlayer : MonoBehaviour
         }
     }
 
-    void MyInput()
+    void ManageInput()
     {
         horizontalMovement = Input.GetAxisRaw("Horizontal");
         verticalMovement = Input.GetAxisRaw("Vertical");
@@ -98,55 +97,33 @@ public class MovePlayer : MonoBehaviour
     void Jump()
     {
         jumpWait = 1;
-
-        if (isGrounded)
-        {
-            rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
-            rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
-        }
         isCrouching = false;
+
+        rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
     }
 
-    void ControlSpeed()
+    void ManageRigidBody()
     {
         if (isCrouching && isGrounded)
-        {
             moveSpeed = Mathf.Lerp(moveSpeed, crouchSpeed, acceleration * Time.deltaTime);
-        }
         else if (Input.GetKey(sprintKey) && isGrounded)
-        {
             moveSpeed = Mathf.Lerp(moveSpeed, sprintSpeed, acceleration * Time.deltaTime);
-        }
         else
-        {
             moveSpeed = Mathf.Lerp(moveSpeed, walkSpeed, acceleration * Time.deltaTime);
-        }
-    }
-
-    void ControlDrag()
-    {
+        
+        //Drag
         if (isGrounded)
-        {
             rb.drag = groundDrag;
-        }
         else
-        {
             rb.drag = airDrag;
-        }
     }
 
     private bool OnSlope()
     {
         if (Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight / 2 + 0.5f))
         {
-            if (slopeHit.normal != Vector3.up)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return (Mathf.Abs(slopeHit.normal.z) > 0.6f || Mathf.Abs(slopeHit.normal.x) > 0.6f);
         }
         return false;
     }
@@ -158,19 +135,18 @@ public class MovePlayer : MonoBehaviour
 
     void Movement()
     {
-
-        if (isGrounded && !OnSlope())
-        {
-            rb.AddForce(moveDirection.normalized * moveSpeed * movementMultiplier, ForceMode.Acceleration);
-        }
-        else if (isGrounded && OnSlope())
-        {
-            rb.AddForce(slopeMoveDirection.normalized * moveSpeed * movementMultiplier, ForceMode.Acceleration);
-        }
-        else if (!isGrounded)
+        if (!isGrounded)
         {
             rb.AddForce(moveDirection.normalized * moveSpeed * movementMultiplier * airMultiplier, ForceMode.Acceleration);
         }
+        else if (isGrounded && !OnSlope())
+        {
+            rb.AddForce(moveDirection.normalized * moveSpeed * movementMultiplier, ForceMode.Acceleration);
+        }
+        //else if (isGrounded && OnSlope())
+        //{
+        //    rb.AddForce(slopeMoveDirection.normalized * moveSpeed * movementMultiplier, ForceMode.Acceleration);
+        //}
     }
 
     private void CrouchCheck()
