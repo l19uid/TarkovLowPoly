@@ -9,31 +9,21 @@ public class MovePlayer : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] float moveSpeed = 4f;
+    [SerializeField] float maxSpeed = 10f;
     [SerializeField] float airMultiplier = 0.4f;
     float movementMultiplier = 10f;
 
-    [Header("Speeds")]
-    [SerializeField] float crouchSpeed = 1f;
-    [SerializeField] float walkSpeed = 4f;
-    [SerializeField] float sprintSpeed = 6f;
-    [SerializeField] float acceleration = 10f;
     bool isCrouching = false;
+    bool isSprinting = false;
 
     [Header("Jumping")]
     public float jumpForce = 5f;
-    public float jumpWait = 1f;
-    public float gravity = 5f;
 
     [Header("Keybinds")]
     [SerializeField] KeyCode jumpKey = KeyCode.Space;
     [SerializeField] KeyCode sprintKey = KeyCode.LeftShift;
 
-    [Header("Drag")]
-    [SerializeField] float groundDrag = 6f;
-    [SerializeField] float airDrag = 2f;
-
-    float horizontalMovement;
-    float verticalMovement;
+    Vector2 input;
 
     [Header("Detection")]
     [SerializeField] Transform groundCheck;
@@ -46,9 +36,6 @@ public class MovePlayer : MonoBehaviour
 
     Vector3 moveDirection;
     Vector3 slopeMoveDirection;
-    Vector3 crouchScale = new Vector3(1, 0.5f, 1);
-    Vector3 playerScale = new Vector3(1, 1, 1);
-
     Rigidbody rb;
 
     RaycastHit slopeHit;
@@ -61,106 +48,58 @@ public class MovePlayer : MonoBehaviour
 
     private void Update()
     {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-        canStand = !Physics.CheckSphere(headCheck.position, groundDistance, groundMask);
-
         ManageInput();
-        ManageRigidBody();
+        ManageMovement();
 
-        if (Input.GetKeyDown(jumpKey) && isGrounded)
-        {
+        if (Input.GetKeyDown(jumpKey) && IsGrounded())
             Jump();
-        }
-
-        if (!isGrounded && jumpWait > 0)
-        {
-            jumpWait = jumpWait - Time.deltaTime;
-        }
-
-        slopeMoveDirection = Vector3.ProjectOnPlane(moveDirection, slopeHit.normal);
-
-        if (Input.GetKeyDown("c") && canStand)
-        {
-            isCrouching = !isCrouching;
-            CrouchCheck();
-        }
+        
+        if(!IsGrounded())
+            rb.velocity = new Vector3(rb.velocity.x,-10,rb.velocity.z);
     }
 
     void ManageInput()
     {
-        horizontalMovement = Input.GetAxisRaw("Horizontal");
-        verticalMovement = Input.GetAxisRaw("Vertical");
-
-        moveDirection = orientation.forward * verticalMovement + orientation.right * horizontalMovement;
+        input.x = Input.GetAxisRaw("Vertical");
+        input.y = Input.GetAxisRaw("Horizontal");
+        
+        if(Input.GetKey(KeyCode.W) && input.x > 0 && Input.GetKey(KeyCode.LeftShift))
+            isSprinting = true;
+        else 
+            isSprinting = false;
+        
+        moveDirection = orientation.forward * input.x + orientation.right * input.y;
     }
 
     void Jump()
     {
-        jumpWait = 1;
-        isCrouching = false;
-
-        rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
-        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+        rb.velocity = Vector3.up * jumpForce;
     }
 
-    void ManageRigidBody()
+    void ManageMovement()
     {
-        if (isCrouching && isGrounded)
-            moveSpeed = Mathf.Lerp(moveSpeed, crouchSpeed, acceleration * Time.deltaTime);
-        else if (Input.GetKey(sprintKey) && isGrounded)
-            moveSpeed = Mathf.Lerp(moveSpeed, sprintSpeed, acceleration * Time.deltaTime);
-        else
-            moveSpeed = Mathf.Lerp(moveSpeed, walkSpeed, acceleration * Time.deltaTime);
-        
-        //Drag
-        if (isGrounded)
-            rb.drag = groundDrag;
-        else
-            rb.drag = airDrag;
+        if(isSprinting)
+            rb.velocity = (moveDirection.normalized * moveSpeed * 1.5f);
+        else 
+            rb.velocity = (moveDirection.normalized * moveSpeed);
     }
 
-    private bool OnSlope()
+    void OnCollisionStay(Collision other)
     {
-        if (Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight / 2 + 0.5f))
+        if (other.gameObject.tag == "Ground" || IsGrounded())
         {
-            return (Mathf.Abs(slopeHit.normal.z) > 0.6f || Mathf.Abs(slopeHit.normal.x) > 0.6f);
+            rb.angularVelocity = Vector3.zero;
         }
-        return false;
+    }
+    
+    private bool IsGrounded()
+    {
+        return Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
     }
 
-    private void FixedUpdate()
+    private void OnDrawGizmos()
     {
-        Movement();
-    }
-
-    void Movement()
-    {
-        if (!isGrounded)
-        {
-            rb.AddForce(moveDirection.normalized * moveSpeed * movementMultiplier * airMultiplier, ForceMode.Acceleration);
-        }
-        else if (isGrounded && !OnSlope())
-        {
-            rb.AddForce(moveDirection.normalized * moveSpeed * movementMultiplier, ForceMode.Acceleration);
-        }
-        //else if (isGrounded && OnSlope())
-        //{
-        //    rb.AddForce(slopeMoveDirection.normalized * moveSpeed * movementMultiplier, ForceMode.Acceleration);
-        //}
-    }
-
-    private void CrouchCheck()
-    {
-        if (isCrouching && isGrounded)
-        {
-            transform.localScale = crouchScale;
-            transform.position = new Vector3(transform.position.x, transform.position.y - 0.5f, transform.position.z);
-        }
-        else if (!isCrouching && canStand && isGrounded)
-        {
-            transform.localScale = playerScale;
-            transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-        }
-        else return;
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(groundCheck.position, groundDistance);
     }
 }
