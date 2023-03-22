@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class MovePlayer : MonoBehaviour
+public class MovementScript : MonoBehaviour
 {
     float playerHeight = 2f;
 
@@ -18,6 +18,7 @@ public class MovePlayer : MonoBehaviour
 
     [Header("Jumping")]
     public float jumpForce = 5f;
+    public float gravity = -9.81f;
 
     [Header("Keybinds")]
     [SerializeField] KeyCode jumpKey = KeyCode.Space;
@@ -29,7 +30,7 @@ public class MovePlayer : MonoBehaviour
     [SerializeField] Transform groundCheck;
     [SerializeField] Transform headCheck;
     [SerializeField] LayerMask groundMask;
-    [SerializeField] float groundDistance = 0.2f;
+    [SerializeField] Vector3 groundDistance;
 
     public bool isGrounded;
     public bool canStand;
@@ -54,8 +55,8 @@ public class MovePlayer : MonoBehaviour
         if (Input.GetKeyDown(jumpKey) && IsGrounded())
             Jump();
         
-        if(!IsGrounded())
-            rb.velocity = new Vector3(rb.velocity.x,-10,rb.velocity.z);
+        if(!IsGrounded() && !Input.GetKeyDown(jumpKey))
+            rb.velocity = new Vector3(rb.velocity.x,gravity,rb.velocity.z);
     }
 
     void ManageInput()
@@ -94,12 +95,12 @@ public class MovePlayer : MonoBehaviour
     
     private bool IsGrounded()
     {
-        return Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        return Physics.CheckBox(groundCheck.position, groundDistance/2, Quaternion.identity, groundMask);
     }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawSphere(groundCheck.position, groundDistance);
+        Gizmos.DrawCube(groundCheck.position, groundDistance);
     }
 }
