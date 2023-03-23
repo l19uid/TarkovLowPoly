@@ -9,10 +9,9 @@ public class MovementScript : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] float moveSpeed = 4f;
-    [SerializeField] float maxSpeed = 10f;
     [SerializeField] float airMultiplier = 0.4f;
-    float movementMultiplier = 10f;
-
+    [SerializeField] float turningSpeed;
+    
     bool isCrouching = false;
     bool isSprinting = false;
 
@@ -30,13 +29,11 @@ public class MovementScript : MonoBehaviour
     [SerializeField] Transform groundCheck;
     [SerializeField] Transform headCheck;
     [SerializeField] LayerMask groundMask;
+    [SerializeField] LayerMask wallMask;
     [SerializeField] Vector3 groundDistance;
 
-    public bool isGrounded;
-    public bool canStand;
-
-    Vector3 moveDirection;
-    Vector3 slopeMoveDirection;
+    [SerializeField] Vector3 moveDirection;
+    [SerializeField] Vector3 inputDirection;
     Rigidbody rb;
 
     RaycastHit slopeHit;
@@ -55,7 +52,7 @@ public class MovementScript : MonoBehaviour
         if (Input.GetKeyDown(jumpKey) && IsGrounded())
             Jump();
         
-        if(!IsGrounded() && !Input.GetKeyDown(jumpKey))
+        if(!IsGrounded() || CloseToWall())
             rb.velocity = new Vector3(rb.velocity.x,gravity,rb.velocity.z);
     }
 
@@ -69,18 +66,25 @@ public class MovementScript : MonoBehaviour
         else 
             isSprinting = false;
         
-        moveDirection = orientation.forward * input.x + orientation.right * input.y;
+        inputDirection = orientation.forward * input.x + orientation.right * input.y;
+        
+        if(inputDirection != Vector3.zero)
+            moveDirection = Vector3.Lerp(moveDirection, inputDirection, Time.deltaTime * turningSpeed);
+        else
+            moveDirection = Vector3.zero;
     }
 
     void Jump()
     {
-        rb.velocity = Vector3.up * jumpForce;
+        rb.velocity = Vector3.up * jumpForce * jumpForce;
     }
 
     void ManageMovement()
     {
         if(isSprinting)
             rb.velocity = (moveDirection.normalized * moveSpeed * 1.5f);
+        else if (IsOnSlope())
+            rb.velocity = Vector3.zero;
         else 
             rb.velocity = (moveDirection.normalized * moveSpeed);
     }
@@ -95,12 +99,42 @@ public class MovementScript : MonoBehaviour
     
     private bool IsGrounded()
     {
-        return Physics.CheckBox(groundCheck.position, groundDistance/2, Quaternion.identity, groundMask);
+        return Physics.CheckSphere(groundCheck.position, groundDistance.x/2, groundMask);
+    }
+    
+    private bool CloseToWall()
+    {
+        return Physics.Raycast(headCheck.position, moveDirection, 1f, 1<<wallMask);
+    }
+    
+    private bool IsOnSlope()
+    {
+        if (Physics.Raycast(groundCheck.transform.position,new Vector3(moveDirection.x * .25f,-.05f,moveDirection.z * .25f) , out slopeHit, .75f, groundMask))
+        {
+            if (slopeHit.normal != Vector3.up)
+            {
+                float angle = Vector3.Angle(slopeHit.normal, Vector3.up);
+                Debug.Log(angle);
+                if (angle >= 44f)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawCube(groundCheck.position, groundDistance);
+        Gizmos.DrawWireSphere(groundCheck.position, groundDistance.x/2);
+        
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, transform.position + moveDirection.normalized * 2f);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(transform.position, transform.position + inputDirection.normalized * 2f);
+        
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(groundCheck.transform.position,groundCheck.transform.position + new Vector3(moveDirection.x * .25f,-.05f,moveDirection.z * .25f)*2);
     }
 }
