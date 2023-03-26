@@ -9,6 +9,7 @@ public class MovementScript : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] float moveSpeed = 4f;
+    [SerializeField] float sprintMultiplier = 1.4f;
     [SerializeField] float airMultiplier = 0.4f;
     [SerializeField] float turningSpeed;
     
@@ -30,7 +31,7 @@ public class MovementScript : MonoBehaviour
     [SerializeField] Transform headCheck;
     [SerializeField] LayerMask groundMask;
     [SerializeField] LayerMask wallMask;
-    [SerializeField] Vector3 groundDistance;
+    [SerializeField] float groundDistance;
 
     [SerializeField] Vector3 moveDirection;
     [SerializeField] Vector3 inputDirection;
@@ -51,8 +52,9 @@ public class MovementScript : MonoBehaviour
 
         if (Input.GetKeyDown(jumpKey) && IsGrounded())
             Jump();
-        
-        if(!IsGrounded() || CloseToWall())
+        if(CanWalkSlope())
+            rb.velocity = new Vector3(rb.velocity.x,0,rb.velocity.z);
+        if(!IsGrounded())
             rb.velocity = new Vector3(rb.velocity.x,gravity,rb.velocity.z);
     }
 
@@ -81,11 +83,9 @@ public class MovementScript : MonoBehaviour
 
     void ManageMovement()
     {
-        if(isSprinting)
-            rb.velocity = (moveDirection.normalized * moveSpeed * 1.5f);
-        else if (IsOnSlope())
-            rb.velocity = Vector3.zero;
-        else 
+        if (isSprinting)
+            rb.velocity = (moveDirection.normalized * moveSpeed * sprintMultiplier);
+        else
             rb.velocity = (moveDirection.normalized * moveSpeed);
     }
 
@@ -99,23 +99,17 @@ public class MovementScript : MonoBehaviour
     
     private bool IsGrounded()
     {
-        return Physics.CheckSphere(groundCheck.position, groundDistance.x/2, groundMask);
-    }
-    
-    private bool CloseToWall()
-    {
-        return Physics.Raycast(headCheck.position, moveDirection, 1f, 1<<wallMask);
+        return Physics.CheckSphere(groundCheck.position, groundDistance/2, groundMask);
     }
     
     private bool IsOnSlope()
     {
-        if (Physics.Raycast(groundCheck.transform.position,new Vector3(moveDirection.x * .25f,-.05f,moveDirection.z * .25f) , out slopeHit, .75f, groundMask))
+        if (Physics.Raycast(groundCheck.transform.position,new Vector3(moveDirection.x * .25f,-.05f,moveDirection.z * .25f) , out slopeHit, 1f, groundMask))
         {
             if (slopeHit.normal != Vector3.up)
             {
                 float angle = Vector3.Angle(slopeHit.normal, Vector3.up);
-                Debug.Log(angle);
-                if (angle >= 44f)
+                if (angle >= 25f)
                 {
                     return true;
                 }
@@ -123,11 +117,27 @@ public class MovementScript : MonoBehaviour
         }
         return false;
     }
+    
+    private bool CanWalkSlope()
+    {
+        if (Physics.Raycast(groundCheck.transform.position,new Vector3(moveDirection.x * .25f,-.05f,moveDirection.z * .25f) , out slopeHit, .75f, groundMask))
+        {
+            if (slopeHit.normal != Vector3.up)
+            {
+                float angle = Vector3.Angle(slopeHit.normal, Vector3.up);
+                if (angle >= 50f)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(groundCheck.position, groundDistance.x/2);
+        Gizmos.DrawWireSphere(groundCheck.position, groundDistance/2);
         
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(transform.position, transform.position + moveDirection.normalized * 2f);
