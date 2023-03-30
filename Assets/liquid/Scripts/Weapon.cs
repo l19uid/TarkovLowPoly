@@ -7,173 +7,116 @@ using Random = UnityEngine.Random;
 
 public class Weapon : MonoBehaviour
 {
-    [Header("Throwing")]
-    public float throwForce;
-    public float throwExtraForce;
-    public float rotationForce;
-
-    [Header("Pickup")]
-    public float animTime;
-
-    [Header("Shooting")]
-    public int maxAmmo;
-    public int shotsPerSecond;
-    public float reloadSpeed;
-    public float hitForce;
-    public float range;
-    public bool tapable;
-    public float kickbackForce;
-    public float resetSmooth;
-    public Vector3 scopePos;
-
+    [Header("Magazines")]
+    private int bulletCount = 0;
+    [SerializeField]
+    private int magazineSize = 30;
+    [SerializeField]
+    private int maxMagazines = 5;
+    private int currentMagazine = 0;
+    
+    [Header("Stats")]
+    [SerializeField]
+    private float damage = 10;
+    [SerializeField]
+    private float fireRate = 10;
+    [SerializeField]
+    private float reloadTime = 2;
+    
     [Header("Recoil")]
-    [SerializeField] private float recoilX;
-    [SerializeField] private float recoilY;
-    [SerializeField] private float recoilZ;
-    public GameObject bolt;
-
-    [Header("Data")]
-    public int weaponGfxLayer;
-    public GameObject[] weaponGfxs;
-    public Collider[] gfxColliders;
-
-    private float _rotationTime;
-    private float _time;
-    private bool _held;
-    private bool _scoping;
-    private bool _reloading;
-    private bool _shooting;
-    private int _ammo;
-    private Rigidbody _rb;
-    private LineRenderer _shootingLine;
-    private Transform _playerCamera;
-    private Vector3 _startPosition;
-    private Quaternion _startRotation;
-    [Header("Game Objects")]
-    public TMP_Text ammoCount;
-    public Camera fpsCam;
-    public ParticleSystem muzzleFlash;
-    public GameObject impactEffect;
-    public Transform shootingPos;
-
-    int playerLayerMask = 11 << 8;
-
-    private float nextTimeToFire = 0f;
-    private CameraRecoil recoilScript;
-    public GameObject recoil;
-
+    [SerializeField]
+    private float horzizontalRecoil = 10;
+    [SerializeField]
+    private float verticalRecoil = 10;
+    [SerializeField]
+    private float ergonomics = 10;
+    
+    [SerializeField]
+    private Vector3 originalPosition = Vector3.zero;
+    [SerializeField]
+    private Vector3 recoilPosition = Vector3.zero;
+    [SerializeField]
+    private Quaternion originalRotation = Quaternion.identity;
+    [SerializeField]
+    private Quaternion recoilRotation = Quaternion.identity;
+    
+    [SerializeField]
+    private float spread = 10;
+    [SerializeField]
+    private float bulletSpeed = 100;
+    [SerializeField]
+    private float bulletDrop = 10;
+    [SerializeField]
+    private float bulletPenetration = 10;
+    
+    private bool isReloading = false;
+    private bool isFiring = false;
+    private bool isAiming = false;
+    [SerializeField]
+    private bool fullAuto = false;
+    
     private void Start()
     {
-        _rb = gameObject.AddComponent<Rigidbody>();
-        _shootingLine = impactEffect.GetComponent<LineRenderer>();
-        _rb.mass = 0.1f;
-        _ammo = maxAmmo;
-        recoilScript = recoil.GetComponent<CameraRecoil>();
+        currentMagazine = maxMagazines;
+        bulletCount = magazineSize;
     }
 
     private void Update()
     {
-        if (!_held) return;
+        if (isReloading) return;
+        
+        if (Input.GetButtonDown("Fire1") && !isFiring && bulletCount > 0)
+            StartCoroutine(Shoot());
+        
+        if (Input.GetKeyDown(KeyCode.R))
+            Reload();
 
-        if (_time < animTime)
-        {
-            _time += Time.deltaTime;
-            _time = Mathf.Clamp(_time, 0f, animTime);
-            var delta = -(Mathf.Cos(Mathf.PI * (_time / animTime)) - 1f) / 2f;
-            transform.localPosition = Vector3.Lerp(_startPosition, Vector3.zero, delta);
-            transform.localRotation = Quaternion.Lerp(_startRotation, Quaternion.identity, delta);
-        }
-        else
-        {
-            _scoping = Input.GetMouseButton(1) && !_reloading;
-            transform.localRotation = Quaternion.identity;
-            transform.localPosition = Vector3.Lerp(transform.localPosition, _scoping ? scopePos : Vector3.zero, resetSmooth * Time.deltaTime);
-        }
-
-        if (_reloading)
-        {
-            _rotationTime += Time.deltaTime;
-            var spinDelta = -(Mathf.Cos(Mathf.PI * (_rotationTime / reloadSpeed)) - 1f) / 2f;
-            transform.localRotation = Quaternion.Euler(new Vector3(spinDelta * 360f, 0, 0));
-        }
-
-        if ((tapable ? Input.GetMouseButtonDown(0) : Input.GetMouseButton(0)) && !_shooting && !_reloading && _ammo > 0)
-        {
-            Shoot();
-            ammoCount.text = _ammo + " / " + maxAmmo;
-
-            bolt.transform.localPosition = bolt.transform.localPosition - new Vector3(0, -.1f, 0);
-            StartCoroutine(ShootingCooldown());
-            bolt.transform.localPosition = Vector3.zero;
-        }
+        ManageRecoil();
     }
 
-    private void Shoot()
+    private IEnumerator Shoot()
     {
-        muzzleFlash.Play();
-        _ammo--;
-        RaycastHit hit;
-
-        if (Physics.Raycast(shootingPos.position, shootingPos.transform.forward, out hit, range))
-        {
-            Destroy(Instantiate(impactEffect, hit.point, Quaternion.Inverse(shootingPos.rotation)), .2f);
-        }
-
-        recoilScript.RecoilFire(recoilX, recoilX, recoilZ);
-        StartCoroutine(ShootingCooldown());
+        isFiring = true;
+        bulletCount--;
+        CalculateRecoil();
+        CalculateBullet();
+        yield return new WaitForSeconds(1 / fireRate);
+        isFiring = false;
     }
-
-    private IEnumerator ShootingCooldown()
+    
+    private void CalculateRecoil()
     {
-        _shooting = true;
-        yield return new WaitForSeconds(1f / shotsPerSecond);
-        _shooting = false;
+        recoilPosition = originalPosition + new Vector3(
+            Random.Range(-ergonomics, ergonomics) / 200, 
+            Random.Range(-ergonomics, ergonomics) / 100, 
+            Random.Range(-ergonomics, ergonomics) / 200);;
+        recoilRotation = originalRotation * Quaternion.Euler(Random.Range(-horzizontalRecoil, horzizontalRecoil), 
+            Random.Range(0, verticalRecoil), 0);
     }
-    public void Pickup(Transform weaponHolder, Transform playerCamera)
+    
+    private void CalculateBullet()
     {
-        if (_held) return;
-        Destroy(_rb);
-        _time = 0f;
-        transform.parent = weaponHolder;
-        _startPosition = transform.localPosition;
-        _startRotation = transform.localRotation;
-        foreach (var col in gfxColliders)
-        {
-            col.enabled = false;
-        }
-        foreach (var gfx in weaponGfxs)
-        {
-            gfx.layer = weaponGfxLayer;
-        }
-        _held = true;
-        ammoCount.text = _ammo + " / " + maxAmmo;
-        _playerCamera = playerCamera;
-        _scoping = false;
+        
     }
-
-    public void Drop(Transform playerCamera)
+    
+    private void ManageRecoil()
     {
-        if (!_held) return;
-        _rb = gameObject.AddComponent<Rigidbody>();
-        _rb.mass = 0.1f;
-        transform.localPosition = Vector3.zero;
-        transform.localRotation = Quaternion.identity;
-        var forward = playerCamera.forward;
-        forward.y = 0f;
-        _rb.velocity = forward * throwForce;
-        _rb.velocity += Vector3.up * throwExtraForce;
-        _rb.angularVelocity = Random.onUnitSphere * rotationForce;
-        foreach (var col in gfxColliders)
-        {
-            col.enabled = true;
-        }
-        foreach (var gfx in weaponGfxs)
-        {
-            gfx.layer = 0;
-        }
-        transform.parent = null;
-        _held = false;
+        transform.localPosition = Vector3.Lerp(transform.localPosition, recoilPosition, Time.deltaTime * 10);
+        transform.localRotation = Quaternion.Lerp(transform.localRotation, recoilRotation, Time.deltaTime * 10);
     }
-
-    public bool Scoping => _scoping;
+    
+    private void Reload()
+    {
+        if (currentMagazine <= 0) return;
+        isReloading = true;
+        StartCoroutine(ReloadTimer());
+    }
+    
+    private IEnumerator ReloadTimer()
+    {
+        yield return new WaitForSeconds(reloadTime);
+        currentMagazine--;
+        bulletCount = magazineSize;
+        isReloading = false;
+    }
 }
