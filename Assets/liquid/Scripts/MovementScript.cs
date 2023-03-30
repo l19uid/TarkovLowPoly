@@ -18,6 +18,9 @@ public class MovementScript : MonoBehaviour
 
     [Header("Jumping")]
     public float jumpForce = 5f;
+    bool jumped;
+    public float jumpApex = 1f;
+    public float jumpTime = 1f;
     public float gravity = -9.81f;
 
     [Header("Keybinds")]
@@ -50,11 +53,9 @@ public class MovementScript : MonoBehaviour
         ManageInput();
         ManageMovement();
 
-        if (Input.GetKeyDown(jumpKey) && IsGrounded())
-            Jump();
         if(CanWalkSlope())
             rb.velocity = new Vector3(rb.velocity.x,0,rb.velocity.z);
-        if(!IsGrounded())
+        if(!IsGrounded() && jumpTime < 0 && !jumped)
             rb.velocity = new Vector3(rb.velocity.x,gravity,rb.velocity.z);
     }
 
@@ -62,6 +63,11 @@ public class MovementScript : MonoBehaviour
     {
         input.x = Input.GetAxisRaw("Vertical");
         input.y = Input.GetAxisRaw("Horizontal");
+
+        if (Input.GetKeyDown(jumpKey) && IsGrounded())
+        {
+            Jump();
+        }
         
         if(Input.GetKey(KeyCode.W) && input.x > 0 && Input.GetKey(KeyCode.LeftShift))
             isSprinting = true;
@@ -78,7 +84,8 @@ public class MovementScript : MonoBehaviour
 
     void Jump()
     {
-        rb.velocity = Vector3.up * jumpForce * jumpForce;
+        jumped = true;
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Force);
     }
 
     void ManageMovement()
@@ -99,23 +106,8 @@ public class MovementScript : MonoBehaviour
     
     private bool IsGrounded()
     {
+        if(jumped)jumped = false;
         return Physics.CheckSphere(groundCheck.position, groundDistance/2, groundMask);
-    }
-    
-    private bool IsOnSlope()
-    {
-        if (Physics.Raycast(groundCheck.transform.position,new Vector3(moveDirection.x * .25f,-.05f,moveDirection.z * .25f) , out slopeHit, 1f, groundMask))
-        {
-            if (slopeHit.normal != Vector3.up)
-            {
-                float angle = Vector3.Angle(slopeHit.normal, Vector3.up);
-                if (angle >= 25f)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
     
     private bool CanWalkSlope()

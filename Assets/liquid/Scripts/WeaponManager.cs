@@ -29,7 +29,7 @@ public class WeaponManager : MonoBehaviour
 
     private void Update()
     {
-        PickUpTextShower();
+        PickUpText();
 
         PickUp();
 
@@ -45,7 +45,7 @@ public class WeaponManager : MonoBehaviour
         return Vector3.Distance(playerCamera.position, hit.point == Vector3.zero ? hit.transform.position : hit.point);
     }
 
-    public void PickUpTextShower()
+    public void PickUpText()
     {
         var textHitList = new RaycastHit[256];
         var textHitNumber = Physics.CapsuleCastNonAlloc(playerCamera.position,
@@ -63,12 +63,12 @@ public class WeaponManager : MonoBehaviour
             }
             if (hit.point == Vector3.zero)
             {
-                pickupText.text = "Press -E- to pickup.";
+                pickupText.text = "Press -F- to pickup.";
             }
             else if (Physics.Raycast(playerCamera.position, hit.point - playerCamera.position, out var hitInfo,
                 hit.distance + 0.1f) && hitInfo.transform == hit.transform)
             {
-                pickupText.text = "Press -E- to pickup.";
+                pickupText.text = "Press -F- to pickup.";
             }
         }
 
@@ -89,7 +89,7 @@ public class WeaponManager : MonoBehaviour
                 _isWeaponHeld = false;
             }
         }
-        else if (Input.GetKeyDown("e"))
+        else if (Input.GetKeyDown(KeyCode.F))
         {
             var hitList = new RaycastHit[256];
             var hitNumber = Physics.CapsuleCastNonAlloc(playerCamera.position,
