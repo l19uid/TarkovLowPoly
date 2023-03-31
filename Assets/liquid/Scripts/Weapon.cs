@@ -31,13 +31,10 @@ public class Weapon : MonoBehaviour
     [SerializeField]
     private float ergonomics = 10;
     
-    [SerializeField]
     private Vector3 originalPosition = Vector3.zero;
-    [SerializeField]
-    private Vector3 recoilPosition = Vector3.zero;
-    [SerializeField]
     private Quaternion originalRotation = Quaternion.identity;
-    [SerializeField]
+    
+    private Vector3 recoilPosition = Vector3.zero;
     private Quaternion recoilRotation = Quaternion.identity;
     
     [SerializeField]
@@ -55,17 +52,34 @@ public class Weapon : MonoBehaviour
     [SerializeField]
     private bool fullAuto = false;
     
+    public Transform muzzlePoint;
+    [SerializeField]
+    float muzzleVelocity = 800f; // meters per second
+    [SerializeField]
+    float range = 1000f; // meters
+    [SerializeField]
+    float gravity = 9.81f;
+    [SerializeField]
+    float bulletWeight = .34f;
+    
+    RaycastHit hit;
+    
     private void Start()
     {
         currentMagazine = maxMagazines;
         bulletCount = magazineSize;
+        
+        originalRotation = transform.localRotation;
+        originalPosition = transform.localPosition;
     }
 
     private void Update()
     {
         if (isReloading) return;
-        
-        if (Input.GetButtonDown("Fire1") && !isFiring && bulletCount > 0)
+
+        if (fullAuto && Input.GetButton("Fire1") && !isFiring && bulletCount > 0)
+            StartCoroutine(Shoot());
+        else if (!fullAuto && Input.GetButtonDown("Fire1") && !isFiring && bulletCount > 0)
             StartCoroutine(Shoot());
         
         if (Input.GetKeyDown(KeyCode.R))
@@ -86,23 +100,41 @@ public class Weapon : MonoBehaviour
     
     private void CalculateRecoil()
     {
-        recoilPosition = originalPosition + new Vector3(
-            Random.Range(-ergonomics, ergonomics) / 200, 
-            Random.Range(-ergonomics, ergonomics) / 100, 
-            Random.Range(-ergonomics, ergonomics) / 200);;
-        recoilRotation = originalRotation * Quaternion.Euler(Random.Range(-horzizontalRecoil, horzizontalRecoil), 
-            Random.Range(0, verticalRecoil), 0);
+        recoilPosition = transform.localPosition + new Vector3(Random.Range(0, ergonomics/25) / 25, 0, 0);
+        
+        recoilRotation = transform.localRotation * Quaternion.Euler(
+            0, 
+            Random.Range(-horzizontalRecoil, horzizontalRecoil) / 20, 
+            Random.Range(0, -verticalRecoil) / 20);
     }
     
     private void CalculateBullet()
     {
+        // adjust the shooter's aim based on the drop
+        Physics.Raycast(muzzlePoint.position, muzzlePoint.forward, out hit, range);
+        if(hit.distance > 0)
+            bulletDrop = (hit.distance / range) * (gravity*bulletWeight);
+        else
+            range = (hit.distance / range) * (gravity*bulletWeight);
         
+        Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight);
+        // bullet hit something
+        if (Physics.Raycast(muzzlePoint.position, dropDirection, out hit, range))
+        {
+            // bullet hit something
+            Debug.Log("Bullet hit " + hit.collider.name);
+        }
     }
     
     private void ManageRecoil()
     {
-        transform.localPosition = Vector3.Lerp(transform.localPosition, recoilPosition, Time.deltaTime * 10);
-        transform.localRotation = Quaternion.Lerp(transform.localRotation, recoilRotation, Time.deltaTime * 10);
+        // Moves the weapon to the recoil position and rotation
+        transform.localPosition = Vector3.Lerp(transform.localPosition, recoilPosition, Time.deltaTime * ergonomics);
+        transform.localRotation = Quaternion.Lerp(transform.localRotation, recoilRotation, Time.deltaTime * ergonomics);
+        
+        // Moves the weapon back to the original position and rotation
+        recoilRotation = Quaternion.Lerp(recoilRotation, originalRotation, Time.deltaTime * ergonomics /2);
+        recoilPosition = Vector3.Lerp(recoilPosition, originalPosition, Time.deltaTime * ergonomics /2);
     }
     
     private void Reload()
@@ -118,5 +150,14 @@ public class Weapon : MonoBehaviour
         currentMagazine--;
         bulletCount = magazineSize;
         isReloading = false;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(muzzlePoint.position, muzzlePoint.position + muzzlePoint.forward * range);
+        Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight);
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(muzzlePoint.position, muzzlePoint.position + dropDirection * range);
     }
 }
