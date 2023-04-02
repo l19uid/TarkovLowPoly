@@ -35,14 +35,23 @@ public class Weapon : MonoBehaviour
     private Quaternion originalRotation = Quaternion.identity;
     
     private Vector3 recoilPosition = Vector3.zero;
-    private Quaternion recoilRotation = Quaternion.identity;
+    private Vector3 recoilRotation = Vector3.zero;
+    
+    private Vector3 mouseInputPosition = Vector3.zero;
+    private Vector3 mouseInputRotation = Vector3.zero;
+    
+    private Vector3 keyboardInputPosition = Vector3.zero;
+    private Vector3 keyboardInputRotation = Vector3.zero;
+    
+    private Vector3 idlePosition = Vector3.zero;
+    private Vector3 idleRotation = Vector3.zero;
     
     [SerializeField]
     private float spread = 10;
     [SerializeField]
     private float bulletSpeed = 100;
     [SerializeField]
-    private float bulletDrop = 10;
+        float bulletWeight = .2f;
     [SerializeField]
     private float bulletPenetration = 10;
     
@@ -59,8 +68,7 @@ public class Weapon : MonoBehaviour
     float range = 1000f; // meters
     [SerializeField]
     float gravity = 9.81f;
-    [SerializeField]
-    float bulletWeight = .34f;
+    
     
     RaycastHit hit;
     
@@ -85,6 +93,11 @@ public class Weapon : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
             Reload();
 
+        MouseInputMovement();
+        KeyboardInputMovement();
+        //if(Time.time % 1 == 0)
+            //IdleWeaponMovement();
+        
         ManageRecoil();
     }
 
@@ -97,27 +110,21 @@ public class Weapon : MonoBehaviour
         yield return new WaitForSeconds(1 / fireRate);
         isFiring = false;
     }
-    
-    private void CalculateRecoil()
-    {
-        recoilPosition = transform.localPosition + new Vector3(Random.Range(0, ergonomics/25) / 25, 0, 0);
-        
-        recoilRotation = transform.localRotation * Quaternion.Euler(
-            0, 
-            Random.Range(-horzizontalRecoil, horzizontalRecoil) / 20, 
-            Random.Range(0, -verticalRecoil) / 20);
-    }
-    
+
     private void CalculateBullet()
     {
-        // adjust the shooter's aim based on the drop
-        Physics.Raycast(muzzlePoint.position, muzzlePoint.forward, out hit, range);
-        if(hit.distance > 0)
-            bulletDrop = (hit.distance / range) * (gravity*bulletWeight);
-        else
-            range = (hit.distance / range) * (gravity*bulletWeight);
-        
-        Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight);
+        // Adjust the bullet drop
+        Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight * 40f);
+        // bullet hit something
+        if (Physics.Raycast(muzzlePoint.position, dropDirection, out hit, range))
+        {
+            BulletTravel(hit.distance, dropDirection);
+        }
+    }
+    
+    private IEnumerable BulletTravel(float distance, Vector3 dropDirection)
+    {
+        yield return new WaitForSeconds(distance / bulletSpeed);
         // bullet hit something
         if (Physics.Raycast(muzzlePoint.position, dropDirection, out hit, range))
         {
@@ -125,23 +132,68 @@ public class Weapon : MonoBehaviour
             Debug.Log("Bullet hit " + hit.collider.name);
         }
     }
-    
-    private void ManageRecoil()
-    {
-        // Moves the weapon to the recoil position and rotation
-        transform.localPosition = Vector3.Lerp(transform.localPosition, recoilPosition, Time.deltaTime * ergonomics);
-        transform.localRotation = Quaternion.Lerp(transform.localRotation, recoilRotation, Time.deltaTime * ergonomics);
-        
-        // Moves the weapon back to the original position and rotation
-        recoilRotation = Quaternion.Lerp(recoilRotation, originalRotation, Time.deltaTime * ergonomics /2);
-        recoilPosition = Vector3.Lerp(recoilPosition, originalPosition, Time.deltaTime * ergonomics /2);
-    }
-    
+     
     private void Reload()
     {
         if (currentMagazine <= 0) return;
         isReloading = true;
         StartCoroutine(ReloadTimer());
+    }
+    
+    private void ManageRecoil()
+    {
+        Vector3 newPosition = recoilPosition + mouseInputPosition + keyboardInputPosition;
+        Quaternion newRotation = Quaternion.Euler(
+              keyboardInputRotation.x,
+            recoilRotation.x + keyboardInputRotation.y - mouseInputRotation.x, 
+            mouseInputRotation.y + recoilRotation.y);
+        
+        transform.localPosition = Vector3.Lerp(transform.localPosition, newPosition, Time.deltaTime * ergonomics);
+        transform.localRotation = Quaternion.Lerp(transform.localRotation, newRotation, Time.deltaTime * ergonomics);
+        
+        // RESET ALL ROTATIONS AND POSITONS
+        recoilPosition = Vector3.Lerp(recoilPosition, originalPosition, Time.deltaTime * ergonomics /2);
+        recoilRotation = Vector3.Lerp(recoilRotation, originalRotation.eulerAngles, Time.deltaTime * ergonomics /2);
+
+        keyboardInputPosition = Vector3.Lerp(keyboardInputPosition, originalPosition, Time.deltaTime * ergonomics /2);
+        keyboardInputRotation = Vector3.Lerp(keyboardInputRotation, originalRotation.eulerAngles, Time.deltaTime * ergonomics /2);
+
+        mouseInputPosition = Vector3.Lerp(mouseInputPosition, originalRotation.eulerAngles, Time.deltaTime * ergonomics /2);
+        mouseInputRotation = Vector3.Lerp(mouseInputRotation, originalPosition, Time.deltaTime * ergonomics /2);
+    }
+    
+    private void CalculateRecoil()
+    {
+        recoilPosition = transform.localPosition + new Vector3(Random.Range(0, ergonomics) / 100, 0, 0);
+        
+        recoilRotation = transform.localRotation * new Vector3(
+            Random.Range(-horzizontalRecoil / 3, horzizontalRecoil / 3) / 25, 
+            Random.Range(-verticalRecoil / 2, -verticalRecoil) / 20, 
+            0
+            );
+    }
+    
+    private void MouseInputMovement()
+    {
+        float mouseX = Input.GetAxis("Mouse X");
+        float mouseY = Input.GetAxis("Mouse Y");
+        
+        mouseInputRotation = new Vector3(mouseX * ergonomics,mouseY * ergonomics , 0);
+        mouseInputPosition = new Vector3(0, -mouseY/ergonomics, -mouseX/ergonomics);
+    }
+    
+    private void KeyboardInputMovement()
+    {
+        float horizontal = Input.GetAxis("Horizontal");
+        
+        keyboardInputPosition = new Vector3(0, 0, horizontal / (10 + ergonomics));
+        keyboardInputRotation = new Vector3(0, horizontal / (10 + ergonomics), 0);
+    }
+    
+    private void IdleWeaponMovement()
+    {
+        idlePosition = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+        idleRotation = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
     }
     
     private IEnumerator ReloadTimer()
@@ -156,8 +208,8 @@ public class Weapon : MonoBehaviour
     {
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(muzzlePoint.position, muzzlePoint.position + muzzlePoint.forward * range);
-        Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight);
         Gizmos.color = Color.red;
+        Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight * 40f);
         Gizmos.DrawLine(muzzlePoint.position, muzzlePoint.position + dropDirection * range);
     }
 }

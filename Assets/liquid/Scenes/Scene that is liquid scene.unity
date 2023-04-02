@@ -2170,19 +2170,18 @@ MonoBehaviour:
   damage: 10
   fireRate: 10
   reloadTime: 2
-  horzizontalRecoil: 50
+  horzizontalRecoil: 100
   verticalRecoil: 100
   ergonomics: 10
   spread: 10
   bulletSpeed: 100
-  bulletDrop: 0
+  bulletWeight: 2
   bulletPenetration: 10
   fullAuto: 1
   muzzlePoint: {fileID: 1808013939}
   muzzleVelocity: 800
   range: 1000
-  gravity: 9.81
-  bulletWeight: 0.34
+  gravity: 9.8
 --- !u!1 &553660394
 GameObject:
   m_ObjectHideFlags: 0
@@ -4792,6 +4791,7 @@ Transform:
   - {fileID: 219535762}
   - {fileID: 1437776175}
   - {fileID: 407108131}
+  - {fileID: 1727704971}
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4819,6 +4819,7 @@ MonoBehaviour:
   jumpKey: 32
   sprintKey: 304
   groundCheck: {fileID: 1437776175}
+  slopeCheck: {fileID: 1727704971}
   headCheck: {fileID: 0}
   groundMask:
     serializedVersion: 2
@@ -4897,7 +4898,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 90
+  field of view: 80
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -9025,6 +9026,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 88f43f99943e8e84b8a97792c6fc4b90, type: 3}
   m_PrefabInstance: {fileID: 1697775189}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1727704970
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1727704971}
+  m_Layer: 0
+  m_Name: SlopeCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1727704971
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1727704970}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.941, z: 0.422}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 940612586}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1740209712 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 850857cd8771af0468d7790e7270437e, type: 3}
@@ -12037,6 +12069,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 5cb99d9ec0d9f664491eb6b74068bc15, type: 2}
+    - target: {fileID: 7339356831882890532, guid: edd3edbd81331774083082dbda474b93, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: ce427d12c0fc476448917b161fdf56b4, type: 2}
     - target: {fileID: 7637633964965452011, guid: edd3edbd81331774083082dbda474b93, type: 3}
       propertyPath: m_Layer
       value: 6
