@@ -46,10 +46,11 @@ public class Weapon : MonoBehaviour
     private Vector3 newPosition = Vector3.zero;
     private Quaternion newRotation = Quaternion.identity;
     
+    public GameObject bulletPrefab;
     [SerializeField]
     private float spread = 10;
     [SerializeField]
-    private float bulletSpeed = 100;
+    private float bulletSpeed = 100; //MpS
     [SerializeField]
         float bulletWeight = .2f;
     [SerializeField]
@@ -71,7 +72,6 @@ public class Weapon : MonoBehaviour
     
     [SerializeField]
     CameraShake cameraShake;
-    
     
     RaycastHit hit;
     
@@ -98,8 +98,6 @@ public class Weapon : MonoBehaviour
 
         MouseInputMovement();
         KeyboardInputMovement();
-        //if(Time.time % 1 == 0)
-            //IdleWeaponMovement();
         
         ManageRecoil();
     }
@@ -109,7 +107,7 @@ public class Weapon : MonoBehaviour
         isFiring = true;
         bulletCount--;
         CalculateRecoil();
-        CameraShake(bulletSpeed * bulletWeight / gravity);
+        CameraShake(1f,  new Quaternion(recoilRotation.x, recoilRotation.y, recoilRotation.z, 1));
         CalculateBullet();
         yield return new WaitForSeconds(1 / fireRate);
         isFiring = false;
@@ -122,18 +120,23 @@ public class Weapon : MonoBehaviour
         // bullet hit something
         if (Physics.Raycast(muzzlePoint.position, dropDirection, out hit, range))
         {
-            BulletTravel(hit.distance, dropDirection);
+            StartCoroutine(BulletTravel(hit.distance, dropDirection));
         }
     }
     
-    private IEnumerable BulletTravel(float distance, Vector3 dropDirection)
+    private IEnumerator BulletTravel(float distance, Vector3 dropDirection)
     {
         yield return new WaitForSeconds(distance / bulletSpeed);
         // bullet hit something
         if (Physics.Raycast(muzzlePoint.position, dropDirection, out hit, range))
         {
-            // bullet hit something
-            Debug.Log("Bullet hit " + hit.collider.name);
+            GameObject bullet = Instantiate(bulletPrefab, muzzlePoint.position, Quaternion.identity);
+            float time = distance / bulletSpeed;
+            while(time > 0)
+            {
+                bullet.transform.position += Vector3.Lerp(bullet.transform.position + dropDirection, hit.point, Time.deltaTime * distance / bulletSpeed);
+                time -= Time.deltaTime;
+            }
         }
     }
      
@@ -171,8 +174,8 @@ public class Weapon : MonoBehaviour
         recoilPosition = transform.localPosition + new Vector3(Random.Range(ergonomics/4, ergonomics/4) / 100, 0, 0);
         
         recoilRotation += transform.localRotation * new Vector3(
-            Random.Range(-horzizontalRecoil / 2, horzizontalRecoil / 2) / 20, // TILT LEFT AND RIGHT
-            Random.Range(-verticalRecoil / 2, -verticalRecoil) / 20, // TILT UP
+            Random.Range(-horzizontalRecoil / 2, horzizontalRecoil / 2) / 50, // TILT LEFT AND RIGHT
+            Random.Range(-verticalRecoil / 2, -verticalRecoil) / 50, // TILT UP
             0
             );
     }
@@ -195,9 +198,9 @@ public class Weapon : MonoBehaviour
         keyboardInputRotation = new Vector3(0, -horizontal * (ergonomics / 50), 0);
     }
     
-    private void CameraShake(float magnitude)
+    private void CameraShake(float magnitude, Quaternion rotation)
     {
-        cameraShake.Shake(1f/fireRate,magnitude);
+        cameraShake.Shake(1f/fireRate,magnitude,rotation);
     }
 
     private IEnumerator ReloadTimer()

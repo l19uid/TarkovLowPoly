@@ -9,20 +9,19 @@ public class CameraShake : MonoBehaviour
     
     private void Update()
     {
-        transform.localRotation = Quaternion.Lerp(transform.localRotation, Quaternion.identity, Time.deltaTime * 5f);
+        transform.localRotation = Quaternion.Lerp(transform.localRotation, recoilRotation, Time.deltaTime * 5f);
     }
 
-    public void Shake(float duration, float magnitude)
+    public void Shake(float duration, float magnitude, Quaternion rotation)
     {
+        recoilRotation = Quaternion.Euler(rotation.y * magnitude, rotation.x * magnitude, rotation.z * magnitude);
         StartCoroutine(ShakeCoroutine(duration, magnitude));
     }
     
     private IEnumerator ShakeCoroutine(float duration, float magnitude)
     {
-        recoilRotation = new Quaternion(0,Random.Range(-magnitude,magnitude),Random.Range(-magnitude,magnitude),0);
-
         yield return new WaitForSeconds(duration);
         
-        Quaternion originalRotation = transform.localRotation;
+        recoilRotation = Quaternion.identity;
     }
 }
