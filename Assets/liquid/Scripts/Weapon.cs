@@ -131,6 +131,7 @@ public class Weapon : MonoBehaviour
         if (Physics.Raycast(muzzlePoint.position, dropDirection, out hit, range))
         {
             GameObject bullet = Instantiate(bulletPrefab, muzzlePoint.position, Quaternion.identity);
+            Destroy(bullet,distance / bulletSpeed);
             float time = distance / bulletSpeed;
             while(time > 0)
             {
