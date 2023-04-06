@@ -10,15 +10,36 @@ public class Magazine : MonoBehaviour
     public string ammoType = "9mm";
     public string magazineName = "9mm Magazine";
     
-    // Start is called before the first frame update
-    void Start()
+    public GameObject magazineModel;
+    
+    
+    public void Reload()
     {
-        
+        currentAmmo = maxAmmo;
     }
-
-    // Update is called once per frame
-    void Update()
+    
+    public void AddAmmo(int amount)
     {
-        
+        currentAmmo += amount;
+    }
+    
+    public void RemoveAmmo(int amount)
+    {
+        currentAmmo -= amount;
+    }
+    
+    public bool IsFull()
+    {
+        return currentAmmo == maxAmmo;
+    }
+    
+    public bool IsEmpty()
+    {
+        return currentAmmo == 0;
+    }
+    
+    public void SetAmmo(int amount)
+    {
+        currentAmmo = amount;
     }
 }

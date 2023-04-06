@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,13 +8,15 @@ using Random = UnityEngine.Random;
 
 public class Weapon : MonoBehaviour
 {
+    // There is a list of magazines and the one used is also at the position 0
+    // when you reaload the current magazine is moved to the end of the list
+    
     [Header("Magazines")]
     private int bulletCount = 0;
     [SerializeField]
-    private int magazineSize = 30;
+    public Magazine currentMagazine;
     [SerializeField]
     private int maxMagazines = 5;
-    private int currentMagazine = 0;
     
     [Header("Stats")]
     [SerializeField]
@@ -56,9 +59,9 @@ public class Weapon : MonoBehaviour
     [SerializeField]
     private float bulletPenetration = 10;
     
-    private bool isReloading = false;
-    private bool isFiring = false;
-    private bool isAiming = false;
+    private bool _isReloading = false;
+    private bool _isFiring = false;
+    private bool _isAiming = false;
     [SerializeField]
     private bool fullAuto = false;
     
@@ -75,22 +78,38 @@ public class Weapon : MonoBehaviour
     
     RaycastHit hit;
     
+    List<Magazine> _magazines;
+    
+    
     private void Start()
     {
-        currentMagazine = maxMagazines;
-        bulletCount = magazineSize;
+        bulletCount = _magazines[0].currentAmmo;
         
         originalRotation = transform.localRotation;
         originalPosition = transform.localPosition;
+
+        FillMags();
     }
 
+    private void FillMags()
+    {
+        for (int i = 0; i < maxMagazines; i++)
+        {
+            _magazines.Add((currentMagazine));
+        }
+        
+        foreach (var mag in _magazines)
+        {
+            mag.SetAmmo(mag.maxAmmo);
+        }
+    }
     private void Update()
     {
-        if (isReloading) return;
+        if (_isReloading) return;
 
-        if (fullAuto && Input.GetButton("Fire1") && !isFiring && bulletCount > 0)
+        if (fullAuto && Input.GetButton("Fire1") && !_isFiring && bulletCount > 0)
             StartCoroutine(Shoot());
-        else if (!fullAuto && Input.GetButtonDown("Fire1") && !isFiring && bulletCount > 0)
+        else if (!fullAuto && Input.GetButtonDown("Fire1") && !_isFiring && bulletCount > 0)
             StartCoroutine(Shoot());
         
         if (Input.GetKeyDown(KeyCode.R))
@@ -104,13 +123,13 @@ public class Weapon : MonoBehaviour
 
     private IEnumerator Shoot()
     {
-        isFiring = true;
+        _isFiring = true;
         bulletCount--;
         CalculateRecoil();
         CameraShake(1f,  new Quaternion(recoilRotation.x, recoilRotation.y, recoilRotation.z, 1));
         CalculateBullet();
         yield return new WaitForSeconds(1 / fireRate);
-        isFiring = false;
+        _isFiring = false;
     }
 
     private void CalculateBullet()
@@ -143,8 +162,7 @@ public class Weapon : MonoBehaviour
      
     private void Reload()
     {
-        if (currentMagazine <= 0) return;
-        isReloading = true;
+        _isReloading = true;
         StartCoroutine(ReloadTimer());
     }
     
@@ -207,9 +225,13 @@ public class Weapon : MonoBehaviour
     private IEnumerator ReloadTimer()
     {
         yield return new WaitForSeconds(reloadTime);
-        currentMagazine--;
-        bulletCount = magazineSize;
-        isReloading = false;
+        
+        Magazine mag = _magazines[0];
+        _magazines.RemoveAt(0);
+        _magazines.Add(mag);
+        
+        bulletCount = _magazines[0].currentAmmo;
+        _isReloading = false;
     }
 
     private void OnDrawGizmos()
