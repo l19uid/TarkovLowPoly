@@ -28,13 +28,18 @@ public class Weapon : MonoBehaviour
     
     [Header("Recoil")]
     [SerializeField]
+    private Vector3 defaultPosition;
+    [SerializeField]
+    private Vector3 scopePosition;
+    [SerializeField]
+    private bool isScoped = false;    
+    [SerializeField]
     private float horzizontalRecoil = 10;
     [SerializeField]
     private float verticalRecoil = 10;
     [SerializeField]
     private float ergonomics = 10;
     
-    private Vector3 originalPosition = Vector3.zero;
     private Quaternion originalRotation = Quaternion.identity;
     
     private Vector3 recoilPosition = Vector3.zero;
@@ -83,19 +88,20 @@ public class Weapon : MonoBehaviour
     
     private void Start()
     {
+        FillMags();
+
         bulletCount = _magazines[0].currentAmmo;
         
-        originalRotation = transform.localRotation;
-        originalPosition = transform.localPosition;
-
-        FillMags();
+        originalRotation = new Quaternion(0,0,0,0);
     }
 
     private void FillMags()
     {
+        _magazines = new List<Magazine>();
+        
         for (int i = 0; i < maxMagazines; i++)
         {
-            _magazines.Add((currentMagazine));
+            _magazines.Add(currentMagazine);
         }
         
         foreach (var mag in _magazines)
@@ -106,9 +112,13 @@ public class Weapon : MonoBehaviour
     private void Update()
     {
         if (_isReloading) return;
+        
+        if (Input.GetButtonDown("Fire2"))
+            isScoped = !isScoped;
 
         if (fullAuto && Input.GetButton("Fire1") && !_isFiring && bulletCount > 0)
             StartCoroutine(Shoot());
+        
         else if (!fullAuto && Input.GetButtonDown("Fire1") && !_isFiring && bulletCount > 0)
             StartCoroutine(Shoot());
         
@@ -168,33 +178,45 @@ public class Weapon : MonoBehaviour
     
     private void ManageRecoil()
     {
-         newPosition = recoilPosition + mouseInputPosition + keyboardInputPosition;
-         newRotation = Quaternion.Euler(
-             0, // LEAN LEFT AND RIGHT
-             recoilRotation.x - mouseInputRotation.x + keyboardInputRotation.y, // ROTATE LEFT AND RIGHT
-             recoilRotation.y + mouseInputRotation.y); // LEAN UP AND DOWN
+        newPosition = recoilPosition + mouseInputPosition + keyboardInputPosition;
+        newRotation = Quaternion.Euler(
+            recoilRotation.y + mouseInputRotation.y, // LEAN UP AND DOWN
+            recoilRotation.x - mouseInputRotation.x + keyboardInputRotation.y, // ROTATE LEFT AND RIGHT
+            0); // LEAN UP AND DOWN
         
+         
+        Vector3 resetPosition = defaultPosition; 
+        Quaternion resetRotation = originalRotation;
+
+        if (isScoped)
+        {
+            resetPosition = scopePosition;
+            newPosition.z *= 0.5f;
+            newPosition.x *= 0.85f;
+            newRotation *= Quaternion.Euler(0.5f, 0.5f, 0.5f);
+        }
+         
         transform.localPosition = Vector3.Lerp(transform.localPosition, newPosition, Time.deltaTime * ergonomics);
         transform.localRotation = Quaternion.Lerp(transform.localRotation, newRotation, Time.deltaTime * ergonomics);
         
         // RESET ALL ROTATIONS AND POSITONS
-        recoilPosition = Vector3.Lerp(recoilPosition, originalPosition, Time.deltaTime * ergonomics / 3);
-        recoilRotation = Vector3.Lerp(recoilRotation, originalRotation.eulerAngles, Time.deltaTime * ergonomics / 3);
+        recoilPosition = Vector3.Lerp(recoilPosition, resetPosition, Time.deltaTime * ergonomics / 3);
+        recoilRotation = Vector3.Lerp(recoilRotation, resetRotation.eulerAngles, Time.deltaTime * ergonomics / 3);
 
-        keyboardInputPosition = Vector3.Lerp(keyboardInputPosition, originalPosition, Time.deltaTime * ergonomics / 2);
-        keyboardInputRotation = Vector3.Lerp(keyboardInputRotation, originalRotation.eulerAngles, Time.deltaTime * ergonomics / 2);
+        keyboardInputPosition = Vector3.Lerp(keyboardInputPosition, resetPosition, Time.deltaTime * ergonomics / 2);
+        keyboardInputRotation = Vector3.Lerp(keyboardInputRotation, resetRotation.eulerAngles, Time.deltaTime * ergonomics / 2);
 
-        mouseInputPosition = Vector3.Lerp(mouseInputPosition, originalRotation.eulerAngles, Time.deltaTime * ergonomics / 2);
-        mouseInputRotation = Vector3.Lerp(mouseInputRotation, originalPosition, Time.deltaTime * ergonomics / 2);
+        mouseInputPosition = Vector3.Lerp(mouseInputPosition, resetPosition, Time.deltaTime * ergonomics / 2);
+        mouseInputRotation = Vector3.Lerp(mouseInputRotation, resetRotation.eulerAngles, Time.deltaTime * ergonomics / 2);
     }
     
     private void CalculateRecoil()
     {
-        recoilPosition = transform.localPosition + new Vector3(Random.Range(ergonomics/4, ergonomics/4) / 100, 0, 0);
+        recoilPosition = transform.localPosition + new Vector3(0, Random.Range(verticalRecoil/100, verticalRecoil/100) / 1000, 0);
         
         recoilRotation += transform.localRotation * new Vector3(
-            Random.Range(-horzizontalRecoil / 2, horzizontalRecoil / 2) / 50, // TILT LEFT AND RIGHT
-            Random.Range(-verticalRecoil / 2, -verticalRecoil) / 50, // TILT UP
+            Random.Range(-horzizontalRecoil / 2, horzizontalRecoil / 2) / 40, // TILT LEFT AND RIGHT
+            Random.Range(-verticalRecoil / 2, -verticalRecoil) / 40, // TILT UP
             0
             );
     }
@@ -204,8 +226,8 @@ public class Weapon : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
         
-        mouseInputRotation = new Vector3(mouseX * ergonomics,mouseY * ergonomics , 0);
-        mouseInputPosition = new Vector3(0, -mouseY/ergonomics, -mouseX/ergonomics);
+        mouseInputRotation = new Vector3(mouseX * ergonomics / 5,mouseY * ergonomics / 5 , 0);
+        mouseInputPosition = new Vector3(-mouseX/ergonomics, -mouseY/ergonomics, 0);
     }
     
     private void KeyboardInputMovement()
@@ -213,15 +235,15 @@ public class Weapon : MonoBehaviour
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
         
-        keyboardInputPosition = new Vector3(vertical / (ergonomics * 5), 0, horizontal / (ergonomics * 5));
-        keyboardInputRotation = new Vector3(0, -horizontal * (ergonomics / 50), 0);
+        keyboardInputPosition = new Vector3(horizontal / 100, 0, -vertical / 100);
+        keyboardInputRotation = new Vector3(0, -horizontal / 10, 0);
     }
     
     private void CameraShake(float magnitude, Quaternion rotation)
     {
         cameraShake.Shake(1f/fireRate,magnitude,rotation);
     }
-
+    
     private IEnumerator ReloadTimer()
     {
         yield return new WaitForSeconds(reloadTime);
