@@ -10,6 +10,8 @@ public class CameraShake : MonoBehaviour
     private void Update()
     {
         transform.localRotation = Quaternion.Lerp(transform.localRotation, recoilRotation, Time.deltaTime * 5f);
+        if(Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D))
+            WalkHeadBob();
     }
 
     public void Shake(float duration, float magnitude, Quaternion rotation)
@@ -23,5 +25,10 @@ public class CameraShake : MonoBehaviour
         yield return new WaitForSeconds(duration);
         
         recoilRotation = Quaternion.identity;
+    }
+
+    private void WalkHeadBob()
+    {
+        
     }
 }

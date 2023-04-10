@@ -12,6 +12,10 @@ public class Magazine : MonoBehaviour
     
     public GameObject magazineModel;
     
+    public void Initialize()
+    {
+        currentAmmo = maxAmmo;
+    }
     
     public void Reload()
     {

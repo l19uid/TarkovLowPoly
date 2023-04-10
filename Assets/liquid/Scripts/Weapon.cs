@@ -26,6 +26,9 @@ public class Weapon : MonoBehaviour
     [SerializeField]
     private float reloadTime = 2;
     
+    [Header("Muzzle Flash")]
+    public GameObject muzzleFlashEffect;
+
     [Header("Recoil")]
     [SerializeField]
     private Vector3 defaultPosition;
@@ -84,6 +87,8 @@ public class Weapon : MonoBehaviour
     RaycastHit hit;
     
     List<Magazine> _magazines;
+
+    private GameObject camera;
     
     
     private void Start()
@@ -93,20 +98,17 @@ public class Weapon : MonoBehaviour
         bulletCount = _magazines[0].currentAmmo;
         
         originalRotation = new Quaternion(0,0,0,0);
+        camera = GameObject.Find("Camera");
     }
 
     private void FillMags()
     {
         _magazines = new List<Magazine>();
+        currentMagazine.currentAmmo = currentMagazine.maxAmmo;
         
         for (int i = 0; i < maxMagazines; i++)
         {
             _magazines.Add(currentMagazine);
-        }
-        
-        foreach (var mag in _magazines)
-        {
-            mag.SetAmmo(mag.maxAmmo);
         }
     }
     private void Update()
@@ -135,6 +137,10 @@ public class Weapon : MonoBehaviour
     {
         _isFiring = true;
         bulletCount--;
+        
+        if(Random.Range(0, 6) < 4)
+            Destroy(Instantiate(muzzleFlashEffect, muzzlePoint.position, camera.transform.rotation), 1f);
+        
         CalculateRecoil();
         CameraShake(1f,  new Quaternion(recoilRotation.x, recoilRotation.y, recoilRotation.z, 1));
         CalculateBullet();
@@ -263,5 +269,7 @@ public class Weapon : MonoBehaviour
         Gizmos.color = Color.red;
         Vector3 dropDirection = muzzlePoint.forward + Vector3.down / (gravity / bulletWeight * 20f);
         Gizmos.DrawLine(muzzlePoint.position, muzzlePoint.position + dropDirection * range);
+        
+        Gizmos.DrawCube(muzzlePoint.position, .1f * Vector3.one);
     }
 }
