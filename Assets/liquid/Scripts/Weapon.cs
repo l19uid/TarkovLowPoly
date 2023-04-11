@@ -89,6 +89,8 @@ public class Weapon : MonoBehaviour
     List<Magazine> _magazines;
 
     private GameObject camera;
+    private Camera mainCamera;
+    private Camera weaponCamera;
     
     
     private void Start()
@@ -98,7 +100,10 @@ public class Weapon : MonoBehaviour
         bulletCount = _magazines[0].currentAmmo;
         
         originalRotation = new Quaternion(0,0,0,0);
+        
         camera = GameObject.Find("Camera");
+        mainCamera =  GameObject.Find("Main Camera").GetComponent<Camera>();
+        weaponCamera = GameObject.Find("Weapon Camera").GetComponent<Camera>();
     }
 
     private void FillMags()
@@ -114,9 +119,10 @@ public class Weapon : MonoBehaviour
     private void Update()
     {
         if (_isReloading) return;
-        
+
         if (Input.GetButtonDown("Fire2"))
-            isScoped = !isScoped;
+            Scope();
+        ManageFOW();
 
         if (fullAuto && Input.GetButton("Fire1") && !_isFiring && bulletCount > 0)
             StartCoroutine(Shoot());
@@ -131,6 +137,25 @@ public class Weapon : MonoBehaviour
         KeyboardInputMovement();
         
         ManageRecoil();
+    }
+
+    private void Scope()
+    {
+        isScoped = !isScoped;
+    }
+    
+    private void ManageFOW()
+    {
+        if (isScoped)
+        {
+            mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, 60, Time.deltaTime * 25);
+            weaponCamera.fieldOfView = Mathf.Lerp(weaponCamera.fieldOfView, 40, Time.deltaTime * 15);
+        }
+        else
+        {
+            mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, 90, Time.deltaTime * 25);
+            weaponCamera.fieldOfView = Mathf.Lerp(weaponCamera.fieldOfView, 70, Time.deltaTime * 25);
+        }
     }
 
     private IEnumerator Shoot()
@@ -202,8 +227,8 @@ public class Weapon : MonoBehaviour
             newRotation *= Quaternion.Euler(0.5f, 0.5f, 0.5f);
         }
          
-        transform.localPosition = Vector3.Lerp(transform.localPosition, newPosition, Time.deltaTime * ergonomics);
-        transform.localRotation = Quaternion.Lerp(transform.localRotation, newRotation, Time.deltaTime * ergonomics);
+        transform.localPosition = Vector3.Lerp(transform.localPosition, newPosition, Time.deltaTime * ergonomics + 10);
+        transform.localRotation = Quaternion.Lerp(transform.localRotation, newRotation, Time.deltaTime * ergonomics + 10);
         
         // RESET ALL ROTATIONS AND POSITONS
         recoilPosition = Vector3.Lerp(recoilPosition, resetPosition, Time.deltaTime * ergonomics / 3);
